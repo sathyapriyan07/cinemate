@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 export default function SeriesDetail() {
@@ -7,6 +7,7 @@ export default function SeriesDetail() {
   const [show, setShow] = useState(null)
   const [credits, setCredits] = useState([])
   const [loading, setLoading] = useState(true)
+  const [openSeason, setOpenSeason] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -92,7 +93,11 @@ export default function SeriesDetail() {
             <h2 style={styles.sectionTitle}>Seasons</h2>
             <div style={styles.seasonsGrid}>
               {show.seasons.filter((s) => s.season_number > 0).map((season) => (
-                <div key={season.id} style={styles.seasonCard}>
+                <button
+                  key={season.id}
+                  style={styles.seasonCard}
+                  onClick={() => setOpenSeason((cur) => (cur === season.season_number ? null : season.season_number))}
+                >
                   {season.poster_path
                     ? <img src={season.poster_path} alt={season.name} style={styles.seasonImg} loading="lazy" />
                     : <div style={styles.seasonNoImg} />
@@ -102,9 +107,13 @@ export default function SeriesDetail() {
                     {season.episode_count} eps
                     {season.air_date ? ` · ${season.air_date.slice(0, 4)}` : ''}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
+
+            {openSeason != null && (
+              <SeasonEpisodes season={(show.seasons || []).find((s) => s.season_number === openSeason)} />
+            )}
           </section>
         )}
 
@@ -153,14 +162,14 @@ function PersonCard({ credit }) {
   const p = credit.persons
   if (!p) return null
   return (
-    <div style={{ textAlign: 'center' }}>
+    <Link to={`/person/${p.id}`} style={{ textAlign: 'center', display: 'block' }}>
       {p.profile_path
         ? <img src={p.profile_path} alt={p.name} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: 6, marginBottom: 6 }} loading="lazy" />
         : <div style={{ width: '100%', aspectRatio: '2/3', background: 'var(--bg3)', borderRadius: 6, marginBottom: 6 }} />
       }
       <p style={{ fontSize: 12, fontWeight: 500 }}>{p.name}</p>
       <p style={{ fontSize: 11, color: 'var(--text2)' }}>{credit.character || credit.job}</p>
-    </div>
+    </Link>
   )
 }
 
@@ -183,7 +192,7 @@ const styles = {
   sectionTitle: { fontFamily: 'var(--font-display)', fontSize: 22, letterSpacing: 1, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 8 },
   detailGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px 24px' },
   seasonsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 12 },
-  seasonCard: { textAlign: 'center' },
+  seasonCard: { textAlign: 'center', display: 'block' },
   seasonImg: { width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: 6, marginBottom: 6 },
   seasonNoImg: { width: '100%', aspectRatio: '2/3', background: 'var(--bg3)', borderRadius: 6, marginBottom: 6 },
   seasonName: { fontSize: 12, fontWeight: 500, marginBottom: 2 },
@@ -191,4 +200,66 @@ const styles = {
   castGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 12 },
   imageGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 },
   galleryImg: { width: '100%', borderRadius: 6, aspectRatio: '16/9', objectFit: 'cover' },
+}
+
+function SeasonEpisodes({ season }) {
+  const episodes = season?.episodes || []
+  if (!season) return null
+  if (episodes.length === 0) {
+    return (
+      <div style={epStyles.wrap}>
+        <p style={epStyles.title}>{season.name}</p>
+        <p style={epStyles.note}>No episodes imported yet. Re-import this series from the Admin Import page.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div style={epStyles.wrap}>
+      <p style={epStyles.title}>{season.name} episodes</p>
+      <div style={epStyles.list}>
+        {episodes.map((ep) => (
+          <div key={ep.id || `${ep.season_number}-${ep.episode_number}`} style={epStyles.row}>
+            <div style={epStyles.thumb}>
+              {ep.still_path ? (
+                <img src={ep.still_path} alt="" style={epStyles.thumbImg} loading="lazy" />
+              ) : (
+                <div style={epStyles.thumbNoImg} />
+              )}
+            </div>
+            <div style={epStyles.meta}>
+              <p style={epStyles.epTitle}>{ep.episode_number}. {ep.name}</p>
+              <p style={epStyles.epSub}>
+                {ep.air_date ? ep.air_date : '—'}{ep.runtime ? ` · ${ep.runtime}m` : ''}
+              </p>
+              {ep.overview && <p style={epStyles.overview}>{ep.overview}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const epStyles = {
+  wrap: { marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' },
+  title: { fontSize: 14, fontWeight: 600, marginBottom: 10 },
+  note: { fontSize: 12, color: 'var(--text2)' },
+  list: { display: 'grid', gap: 10 },
+  row: {
+    display: 'grid',
+    gridTemplateColumns: '120px 1fr',
+    gap: 12,
+    padding: 10,
+    border: '1px solid var(--border)',
+    background: 'var(--bg2)',
+    borderRadius: 10,
+  },
+  thumb: { width: '100%' },
+  thumbImg: { width: '100%', borderRadius: 8, aspectRatio: '16/9', objectFit: 'cover' },
+  thumbNoImg: { width: '100%', borderRadius: 8, aspectRatio: '16/9', background: 'var(--bg3)' },
+  meta: { minWidth: 0 },
+  epTitle: { fontSize: 13, fontWeight: 600, marginBottom: 2 },
+  epSub: { fontSize: 11, color: 'var(--text2)', marginBottom: 6 },
+  overview: { fontSize: 12, color: '#ccc', lineHeight: 1.6 },
 }

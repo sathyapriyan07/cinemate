@@ -166,6 +166,20 @@ export async function importSeries(tmdbId, onLog) {
   log(`Fetching series ${tmdbId} from TMDB...`)
   const s = await tmdb.getSeries(tmdbId)
 
+  // Fetch per-season episode details (TMDB /season endpoint).
+  // Keep it bounded to avoid very large shows taking too long.
+  const seasonsForEpisodes = (s.seasons || []).filter((season) => season.season_number > 0).slice(0, 25)
+  const seasonDetails = {}
+
+  for (const season of seasonsForEpisodes) {
+    try {
+      log(`  Fetching S${season.season_number} episodes...`)
+      seasonDetails[season.season_number] = await tmdb.getSeason(s.id, season.season_number)
+    } catch (e) {
+      log(`  Warning: could not fetch S${season.season_number} episodes: ${e.message}`)
+    }
+  }
+
   const seriesData = {
     tmdb_id: s.id,
     name: s.name,
@@ -205,7 +219,9 @@ export async function importSeries(tmdbId, onLog) {
     })),
     production_countries: s.production_countries || [],
     spoken_languages: s.spoken_languages || [],
-    seasons: (s.seasons || []).map((season) => ({
+    seasons: (s.seasons || []).map((season) => {
+      const sd = seasonDetails[season.season_number]
+      return ({
       id: season.id,
       name: season.name,
       overview: season.overview,
@@ -214,7 +230,19 @@ export async function importSeries(tmdbId, onLog) {
       air_date: season.air_date,
       poster_path: tmdbImageUrl(season.poster_path, 'w342'),
       vote_average: season.vote_average,
-    })),
+      episodes: (sd?.episodes || []).map((ep) => ({
+        id: ep.id,
+        name: ep.name,
+        overview: ep.overview,
+        season_number: ep.season_number,
+        episode_number: ep.episode_number,
+        air_date: ep.air_date,
+        runtime: ep.runtime ?? null,
+        still_path: tmdbImageUrl(ep.still_path, 'w300'),
+        vote_average: ep.vote_average,
+      })),
+    })
+    }),
     keywords: (s.keywords?.results || []).map((k) => k.name),
     videos: (s.videos?.results || []).map((v) => ({
       key: v.key,

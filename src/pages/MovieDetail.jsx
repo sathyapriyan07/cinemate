@@ -147,14 +147,14 @@ function PersonCard({ credit }) {
   const p = credit.persons
   if (!p) return null
   return (
-    <div style={pcStyles.card}>
+    <Link to={`/person/${p.id}`} style={pcStyles.card}>
       {p.profile_path
         ? <img src={p.profile_path} alt={p.name} style={pcStyles.img} loading="lazy" />
         : <div style={pcStyles.noImg} />
       }
       <p style={pcStyles.name}>{p.name}</p>
       <p style={pcStyles.role}>{credit.character || credit.job}</p>
-    </div>
+    </Link>
   )
 }
 
@@ -229,7 +229,7 @@ const styles = {
 }
 
 const pcStyles = {
-  card: { textAlign: 'center' },
+  card: { textAlign: 'center', display: 'block' },
   img: { width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: 6, marginBottom: 6 },
   noImg: { width: '100%', aspectRatio: '2/3', background: 'var(--bg3)', borderRadius: 6, marginBottom: 6 },
   name: { fontSize: 12, fontWeight: 500 },

@@ -31,6 +31,9 @@ export const tmdb = {
       append_to_response: 'credits,videos,images,keywords,content_ratings,external_ids',
     }),
 
+  getSeason: (seriesId, seasonNumber) =>
+    tmdbFetch(`/tv/${seriesId}/season/${seasonNumber}`, {}),
+
   getPerson: (id) =>
     tmdbFetch(`/person/${id}`, {
       append_to_response: 'combined_credits,images,external_ids',

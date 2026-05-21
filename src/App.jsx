@@ -7,6 +7,7 @@ import Movies from './pages/Movies'
 import MovieDetail from './pages/MovieDetail'
 import Series from './pages/Series'
 import SeriesDetail from './pages/SeriesDetail'
+import PersonDetail from './pages/PersonDetail'
 import Login from './pages/Login'
 
 import AdminDashboard from './pages/admin/Dashboard'
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="/movies/:id" element={<PublicGuard><MovieDetail /></PublicGuard>} />
         <Route path="/series" element={<PublicGuard><Series /></PublicGuard>} />
         <Route path="/series/:id" element={<PublicGuard><SeriesDetail /></PublicGuard>} />
+        <Route path="/person/:id" element={<PublicGuard><PersonDetail /></PublicGuard>} />
         <Route path="/login" element={<Login />} />
 
         {/* Admin */}
